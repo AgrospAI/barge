@@ -7,7 +7,7 @@ services:
     ports:
       - 5050:5000
     networks:
-      backend:
+      ocean_backend:
         ipv4_address: 172.15.0.11
     environment:
       REGISTRY_HTTP_ADDR: "172.15.0.11:5000"

@@ -1,0 +1,33 @@
+version: '3'
+services:
+  node:
+    image: oceanprotocol/ocean-node:${NODE_VERSION:-latest}
+    ports:
+      - 8000:8000
+      - 8001:8001
+    networks:
+      ocean_backend:
+        ipv4_address: 172.15.0.5
+    depends_on:
+      - elasticsearch
+      - ocean-contracts
+      - ganache
+    environment:
+      DB_TYPE: 'elasticsearch'
+      DB_URL: ${DB_URL}
+      PRIVATE_KEY: ${NODE_PRIVATE_KEY}
+      IPFS_GATEWAY: ${IPFS_GATEWAY}
+      ARWEAVE_GATEWAY: https://arweave.net/
+      P2P_ipV4BindTcpPort: 8000
+      HTTP_API_PORT: 8001
+      RPCS: '{ "8996": {"rpc": "http://172.15.0.3:8545", "chainId": 8996, "network": "development", "chunkSize": 100} }'
+      INDEXER_NETWORKS: '[8996]'
+      AUTHORIZED_DECRYPTERS: '["0xe2DD09d719Da89e5a3D0F2549c7E24566e947260"]'
+      P2P_ENABLE_UPNP: 'false'
+      P2P_ENABLE_AUTONAT: 'false'
+      ALLOWED_ADMINS: '["0xe2DD09d719Da89e5a3D0F2549c7E24566e947260"]'
+      MAX_REQ_PER_MINUTE: 320
+      MAX_CONNECTIONS_PER_MINUTE: 320
+      ADDRESS_FILE: "/ocean-contracts/artifacts/address.json"
+    volumes:
+    - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/

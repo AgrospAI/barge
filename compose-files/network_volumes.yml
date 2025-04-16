@@ -1,7 +1,8 @@
 version: "3"
 
 networks:
-  backend:
+  ocean_backend:
+    name: ocean_backend
     driver: bridge
     ipam:
       driver: default
