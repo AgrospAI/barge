@@ -9,9 +9,12 @@ services:
       ocean_backend:
         ipv4_address: 172.15.0.5
     depends_on:
-      - elasticsearch
-      - ocean-contracts
-      - ganache
+      elasticsearch:
+        condition: service_started
+      ocean-contracts:
+        condition: service_healthy
+      ganache:
+        condition: service_started
     environment:
       DB_TYPE: 'elasticsearch'
       DB_URL: ${DB_URL}

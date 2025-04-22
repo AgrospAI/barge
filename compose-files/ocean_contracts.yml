@@ -23,3 +23,9 @@ services:
       - ganache
     volumes:
     - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/
+    healthcheck:
+      test: ["CMD", "sh", "-c", "[ -f /ocean-contracts/artifacts/ready ]"]
+      start_period: 20s
+      interval: 5s
+      timeout: 3s
+      retries: 30
