@@ -164,7 +164,7 @@ Alternatively, you can pass your own mnemonic with `GANACHE_MNEMONIC`.
 
 ### Dashboard
 
-This will start a `portainer` dashboard with the following admin credentials and connects to the local docker host. This Building Block can be disabled by setting the `--no-dashboard` flag.
+This will start a `portainer` dashboard with the following admin credentials and connects to the local docker host. This Building Block can be started by setting the `--with-dashboard` flag.
 
 - User: `admin`
 - Password: `oceanprotocol`
