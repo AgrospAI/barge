@@ -91,7 +91,7 @@ export DB_CLIENT_KEY=""
 export DB_CLIENT_CERT=""
 CHECK_ELASTIC_VM_COUNT=true
 
-export IPFS_GATEWAY=http://172.15.0.16:5001
+export IPFS_GATEWAY=http://172.15.0.16:8080/
 export IPFS_HTTP_GATEWAY=http://172.15.0.16:8080/ipfs/
 
 #Node
