@@ -25,6 +25,7 @@ services:
       HTTP_API_PORT: 8001
       RPCS: '{ "8996": {"rpc": "http://172.15.0.3:8545", "chainId": 8996, "network": "development", "chunkSize": 100} }'
       INDEXER_NETWORKS: '[8996]'
+      LOG_LEVEL: DEBUG
       AUTHORIZED_DECRYPTERS: '["0xe2DD09d719Da89e5a3D0F2549c7E24566e947260"]'
       P2P_ENABLE_UPNP: 'false'
       P2P_ENABLE_AUTONAT: 'false'
