@@ -26,34 +26,18 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 DIR="${DIR/ /\\ }"
 COMPOSE_DIR="${DIR}/compose-files"
 
-# Default versions of Aquarius, Provider
+# Default versions
 export TYPESENSE_VERSION=${TYPESENSE_VERSION:-0.25.1}
 export AQUARIUS_VERSION=${AQUARIUS_VERSION:-v5.1.5}
 export ELASTICSEARCH_VERSION=${ELASTICSEARCH_VERSION:-8.5.1}
-export PROVIDER_VERSION=${PROVIDER_VERSION:-v2.1.6}
-export SUBGRAPH_VERSION=${SUBGRAPH_VERSION:-v4.0.2}
-export CONTRACTS_VERSION=${CONTRACTS_VERSION:-v2.2.1}
-export RBAC_VERSION=${RBAC_VERSION:-next}
-export GRAPH_NODE_VERSION=${GRAPH_NODE_VERSION:-v0.33.0}
-
-export OPERATOR_SERVICE_VERSION=${OPERATOR_SERVICE_VERSION:-oceanprotocol/operator-service:v4main}
-export OPERATOR_ENGINE_VERSION=${OPERATOR_ENGINE_VERSION:-oceanprotocol/operator-engine:v4main}
-export POD_CONFIGURATION_VERSION=${POD_CONFIGURATION_VERSION:-oceanprotocol/pod-configuration:v4main}
-export POD_PUBLISHING_VERSION=${POD_PUBLISHING_VERSION:-oceanprotocol/pod-publishing:v4main}
-export WAIT_FOR_C2DIMAGES=${WAIT_FOR_C2DIMAGES:-false}
-
-export PDR_PUBLISHER_VERSION=${PDR_PUBLISHER_VERSION:-latest}
-export PDR_BACKEND_VERSION=${PDR_BACKEND_VERSION:-latest}
+export NODE_VERSION=${NODE_VERSION:-main}
+export CONTRACTS_VERSION=${CONTRACTS_VERSION:-v2.3.0}
 
 
 export PROJECT_NAME="ocean"
 export FORCEPULL="false"
 
 
-# Export LOG LEVEL
-export AQUARIUS_LOG_LEVEL=${AQUARIUS_LOG_LEVEL:-INFO}
-export PROVIDER_LOG_LEVEL=${PROVIDER_LOG_LEVEL:-INFO}
-export SUBGRAPH_LOG_LEVEL=${SUBGRAPH_LOG_LEVEL:-info}
 
 # Export User UID and GID
 export LOCAL_USER_ID=$(id -u)
@@ -78,14 +62,8 @@ export GANACHE_FORK=${GANACHE_FORK:-"istanbul"}
 export OCEAN_HOME="${HOME}/.ocean"
 export CONTRACTS_OWNER_ROLE_ADDRESS="${CONTRACTS_OWNER_ROLE_ADDRESS}"
 export DEPLOY_CONTRACTS=true
-export DEPLOY_SUBGRAPH=true
 export OCEAN_ARTIFACTS_FOLDER="${OCEAN_HOME}/ocean-contracts/artifacts"
 mkdir -p ${OCEAN_ARTIFACTS_FOLDER}
-export OCEAN_C2D_FOLDER="${OCEAN_HOME}/ocean-c2d/"
-mkdir -p ${OCEAN_C2D_FOLDER}
-export OCEAN_SUBGRAPH_FOLDER="${OCEAN_HOME}/ocean-subgraph/"
-rm -f "${OCEAN_SUBGRAPH_FOLDER}/ready"
-mkdir -p ${OCEAN_SUBGRAPH_FOLDER}
 
 export ADDRESS_FILE="${OCEAN_ARTIFACTS_FOLDER}/address.json"
 echo "export ADDRESS_FILE=${ADDRESS_FILE}"
@@ -103,6 +81,7 @@ export EVENTS_MONITOR_SLEEP_TIME=5
 export DB_MODULE="elasticsearch"
 export DB_HOSTNAME="http://172.15.0.6"
 export DB_PORT="9200"
+export DB_URL="http://172.15.0.6:9200"
 export DB_USERNAME="elastic"
 export DB_PASSWORD="changeme"
 export DB_SSL="false"
@@ -112,23 +91,13 @@ export DB_CLIENT_KEY=""
 export DB_CLIENT_CERT=""
 CHECK_ELASTIC_VM_COUNT=true
 
-export IPFS_GATEWAY=http://172.15.0.16:5001
+export IPFS_GATEWAY=http://172.15.0.16:8080/
 export IPFS_HTTP_GATEWAY=http://172.15.0.16:8080/ipfs/
-#Provider
-export REQUEST_TIMEOUT=10
-export PROVIDER_WORKERS=10
-export PROVIDER_IPFS_GATEWAY=https://gateway.ipfs.io/
-export PROVIDER_PRIVATE_KEY=0xfd5c1ccea015b6d663618850824154a3b3fb2882c46cefb05b9a93fea8c3d215
-export PROVIDER2_PRIVATE_KEY=0xc852b55146fd168ec3d392bbd70988c18463efa460a395dede376453aca1180e
 
-if [ ${IP} = "localhost" ]; then
-    export AQUARIUS_URI=http://172.15.0.5:5000
-else
-    export AQUARIUS_URI=http://${IP}:5000
-fi
+#Node
+export NODE_PRIVATE_KEY=0xfd5c1ccea015b6d663618850824154a3b3fb2882c46cefb05b9a93fea8c3d215
 
-#export OPERATOR_SERVICE_URL=http://127.0.0.1:8050
-export OPERATOR_SERVICE_URL=${OPERATOR_SERVICE_URL:-"http://172.15.0.13:31000/"}
+
 
 # colors
 COLOR_R="\033[0;31m"    # red
@@ -185,14 +154,11 @@ show_banner
 
 COMPOSE_FILES=""
 COMPOSE_FILES+=" -f ${COMPOSE_DIR}/network_volumes.yml"
-COMPOSE_FILES+=" -f ${COMPOSE_DIR}/dashboard.yml"
-COMPOSE_FILES+=" -f ${COMPOSE_DIR}/aquarius.yml"
 COMPOSE_FILES+=" -f ${COMPOSE_DIR}/elasticsearch.yml"
 COMPOSE_FILES+=" -f ${COMPOSE_DIR}/ipfs.yml"
-COMPOSE_FILES+=" -f ${COMPOSE_DIR}/provider.yml"
-COMPOSE_FILES+=" -f ${COMPOSE_DIR}/redis.yml"
 COMPOSE_FILES+=" -f ${COMPOSE_DIR}/ganache.yml"
 COMPOSE_FILES+=" -f ${COMPOSE_DIR}/ocean_contracts.yml"
+COMPOSE_FILES+=" -f ${COMPOSE_DIR}/node.yml"
 
 DOCKER_COMPOSE_EXTRA_OPTS="${DOCKER_COMPOSE_EXTRA_OPTS:-}"
 
@@ -214,14 +180,9 @@ while :; do
         #################################################
         # Exclude switches
         #################################################
-        --no-provider)
-            COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/provider.yml/}"
-            COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/redis.yml/}"
-            printf $COLOR_Y'Starting without Provider...\n\n'$COLOR_RESET
-            ;;
-	    --with-provider2)
-	        COMPOSE_FILES+=" -f ${COMPOSE_DIR}/provider2.yml"
-            printf $COLOR_Y'Starting with a 2nd Provider...\n\n'$COLOR_RESET
+        --no-node)
+            COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/node.yml/}"
+            printf $COLOR_Y'Starting without Node...\n\n'$COLOR_RESET
             ;;
         --with-registry)
             COMPOSE_FILES+=" -f ${COMPOSE_DIR}/registry.yml"
@@ -231,81 +192,21 @@ while :; do
 	        COMPOSE_FILES+=" -f ${COMPOSE_DIR}/typesense.yml"
             printf $COLOR_Y'Starting with Typesense...\n\n'$COLOR_RESET
             ;;
-        --with-c2d)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/registry.yml"
-	    COMPOSE_FILES+=" -f ${COMPOSE_DIR}/ipfs.yml"
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/c2d.yml"
-            printf $COLOR_Y'Starting with C2D...\n\n'$COLOR_RESET
-            ;;
-        --with-rbac)
-	        COMPOSE_FILES+=" -f ${COMPOSE_DIR}/rbac.yml"
-            printf $COLOR_Y'Starting with RBAC Server...\n\n'$COLOR_RESET
+        --with-dashboard)
+	        COMPOSE_FILES+=" -f ${COMPOSE_DIR}/dashboard.yml"
+            printf $COLOR_Y'Starting with Docker DashBoard...\n\n'$COLOR_RESET
             ;;
         --no-ipfs)
             COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/ipfs.yml/}"
 	        printf $COLOR_Y'Starting without IPFS...\n\n'$COLOR_RESET
             ;;
-        --with-thegraph)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/thegraph.yml"
-            printf $COLOR_Y'Starting with TheGraph...\n\n'$COLOR_RESET
-            ;;
-        --no-aquarius)
-            COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/aquarius.yml/}"
-            printf $COLOR_Y'Starting without Aquarius...\n\n'$COLOR_RESET
-            ;;
         --no-elasticsearch)
             COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/elasticsearch.yml/}"
             printf $COLOR_Y'Starting without Elastic search...\n\n'$COLOR_RESET
             ;;
-        --no-dashboard)
-            COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/dashboard.yml/}"
-            printf $COLOR_Y'Starting without Dashboard ...\n\n'$COLOR_RESET
-            ;;
         --skip-deploy)
             export DEPLOY_CONTRACTS=false
             printf $COLOR_Y'Ocean contracts will not be deployed, the last deployment (if any) will be intact ...\n\n'$COLOR_RESET
-            ;;
-        --skip-subgraph-deploy)
-            export DEPLOY_SUBGRAPH=false
-            printf $COLOR_Y'Ocean subgraph will not be deployed, the last deployment (if any) will be intact ...\n\n'$COLOR_RESET
-            ;;
-        --predictoor)
-            # Add what we need
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/thegraph.yml"
-            # We should remove what is not needed for now, but ocean,py requires both aqua & provider
-            #COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/provider.yml/}"
-            #COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/redis.yml/}"
-            #COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/aquarius.yml/}"
-            #COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/elasticsearch.yml/}"
-            #COMPOSE_FILES="${COMPOSE_FILES/ -f ${COMPOSE_DIR}\/dashboard.yml/}"
-            # Enforce images
-            #export CONTRACTS_VERSION=predictoor
-            #export SUBGRAPH_VERSION=predictoor
-            export PDR_BACKEND_VERSION=${PDR_BACKEND_VERSION:-latest}
-
-            # replicate true blockchain behiavour
-            export GANACHE_INSTAMINE=strict
-            export GANACHE_BLOCKTIME=1
-            ;;
-        --with-pdr-trueval)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/pdr-trueval.yml"
-            printf $COLOR_Y'Starting with pdr-trueval...\n\n'$COLOR_RESET
-            ;;
-        --with-pdr-trader)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/pdr-trader.yml"
-            printf $COLOR_Y'Starting with pdr-trader...\n\n'$COLOR_RESET
-            ;;
-        --with-pdr-predictoor)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/pdr-predictoor.yml"
-            printf $COLOR_Y'Starting with pdr-predictoor...\n\n'$COLOR_RESET
-            ;;
-        --with-pdr-publisher)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/pdr-publisher.yml"
-            printf $COLOR_Y'Starting with pdr-publisher...\n\n'$COLOR_RESET
-            ;;
-        --with-pdr-dfbuyer)
-            COMPOSE_FILES+=" -f ${COMPOSE_DIR}/pdr-dfbuyer.yml"
-            printf $COLOR_Y'Starting with pdr-dfbuyer...\n\n'$COLOR_RESET
             ;;
         #################################################
         # Cleaning switches

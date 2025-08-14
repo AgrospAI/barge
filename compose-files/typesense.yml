@@ -5,7 +5,7 @@ services:
     ports:
       - 8108:8108
     networks:
-      backend:
+      ocean_backend:
         ipv4_address: 172.15.0.20
     volumes:
     - typesense-data:/data
