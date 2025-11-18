@@ -1,0 +1,9 @@
+[submodule "provider"]
+	path = provider
+	url = https://github.com/AgrospAI/provider
+[submodule "aquarius"]
+	path = aquarius
+	url = https://github.com/AgrospAI/aquarius
+[submodule "ocean-subgraph"]
+	path = ocean-subgraph
+	url = https://github.com/AgrospAI/ocean-subgraph
