@@ -177,7 +177,7 @@ services:
         ipv4_address: 172.16.0.18
 
   ocean-contracts:
-    image: oceanprotocol/ocean-contracts:${CONTRACTS_VERSION:-latest}
+    build: contracts
     environment:
       MNEMONIC: ${GANACHE_MNEMONIC:-taxi music thumb unique chat sand crew more leg another off lamp}
       OWNER_ROLE_ADDRESS: ${CONTRACTS_OWNER_ROLE_ADDRESS}

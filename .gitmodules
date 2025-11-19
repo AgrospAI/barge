@@ -7,3 +7,6 @@
 [submodule "ocean-subgraph"]
 	path = ocean-subgraph
 	url = https://github.com/AgrospAI/ocean-subgraph
+[submodule "contracts"]
+	path = contracts
+	url = https://github.com/AgrospAI/contracts.git
