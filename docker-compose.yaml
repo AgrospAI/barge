@@ -39,9 +39,14 @@ services:
   aquarius:
     build: aquarius
     depends_on:
-      - provider
-      - elasticsearch
-      - ganache
+      provider:
+        condition: service_healthy
+        restart: true
+      elasticsearch:
+        condition: service_healthy
+        restart: true
+      ocean-contracts:
+        condition: service_completed_successfully
     ports:
       - 10000:5000
     volumes:
@@ -69,7 +74,7 @@ services:
       SUBGRAPH_URLS: '{"8996": "http://graph-node:8000"}'
     networks:
       ocean:
-        ipv4_address: 172.16.0.13
+        ipv4_address: 172.16.0.10
 
   provider:
     build: provider
@@ -77,16 +82,25 @@ services:
       - "8030:8030"
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/usr/local/.ocean/:ro
+    depends_on:
+      ocean-contracts:
+        condition: service_completed_successfully
     environment:
       ADDRESS_FILE: "/usr/local/.ocean/address.json"
       AQUARIUS_URL: http://aquarius:5000
-      NETWORK_URL: '{"8996": "http://172.16.0.3:8545"}'
+      NETWORK_URL: '{"8996": "http://ganache:8545"}'
       IPFS_GATEWAY: ipfs
       PROVIDER_PRIVATE_KEY: '{"8996": "0xc594c6e5def4bab63ac29eed19a134c130388f74f019bc74b8f4389df2837a58"}'
       PROVIDER_ADDRESS: 0xe2DD09d719Da89e5a3D0F2549c7E24566e947260
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8030/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_period: 5s
     networks:
       ocean:
-        ipv4_address: 172.16.0.14
+        ipv4_address: 172.16.0.12
 
   elasticsearch:
     image: elasticsearch:${ELASTICSEARCH_VERSION:-8.7.0}
@@ -102,6 +116,16 @@ services:
     networks:
       ocean:
         ipv4_address: 172.16.0.6
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f -s http://localhost:9200/_cluster/health?wait_for_status=yellow || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
 
   # BEGIN SUBGRAPH
   graph-node:
@@ -115,7 +139,6 @@ services:
     depends_on:
       - ipfs
       - postgres
-      - ganache
     environment:
       postgres_host: postgres
       postgres_user: graph-node
@@ -129,11 +152,11 @@ services:
       test: ["CMD", "nc", "-z", "localhost", "8030"]
       interval: 30s
       timeout: 5s
-      retries: 5
+      retries: 2
       start_period: 20s
     networks:
       ocean:
-        ipv4_address: 172.16.0.15
+        ipv4_address: 172.16.0.17
 
   ipfs:
     image: ipfs/go-ipfs:v0.4.23
@@ -144,7 +167,7 @@ services:
       - graphipfs:/data/ipfs
     networks:
       ocean:
-        ipv4_address: 172.16.0.16
+        ipv4_address: 172.16.0.18
 
   postgres:
     image: postgres:18
@@ -169,12 +192,13 @@ services:
         restart: true
     environment:
       IPFS: http://ipfs:5001
+      GRAPH_NODE: http://graph-node:8020
     volumes:
-      - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:cached
+      - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:ro
       - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
     networks:
       ocean:
-        ipv4_address: 172.16.0.18
+        ipv4_address: 172.16.0.21
 
   ocean-contracts:
     build: contracts
@@ -197,12 +221,7 @@ services:
       - subgraph
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:cached
-    healthcheck:
-      test: ["CMD", "sh", "-c", "[ -f /ocean-contracts/artifacts/ready ]"]
-      start_period: 30s
-      interval: 5s
-      timeout: 3s
-      retries: 300
+      - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
     networks:
       - ocean
 
