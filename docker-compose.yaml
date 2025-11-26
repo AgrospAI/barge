@@ -1,36 +1,27 @@
 services:
   ganache:
-    image: trufflesuite/ganache:latest
+    image: ghcr.io/foundry-rs/foundry:v1.5.0
     ports:
       - 8545:8545
     entrypoint:
       [
-        "node",
-        "/app/dist/node/cli.js",
-        "--database.dbPath",
-        "./ganache_cache",
-        "--chain.allowUnlimitedContractSize",
-        "true",
-        "--chain.chainId",
-        "0x2324",
-        "--chain.networkId",
-        "0x2324",
-        "-a",
-        "20",
-        "-l",
-        "50000000",
-        "-g",
-        "1",
-        "--chain.hardfork",
-        "${GANACHE_FORK:-istanbul}",
-        "--miner.blockTime",
-        "${GANACHE_BLOCKTIME:-0}",
-        "--miner.instamine",
-        "${GANACHE_INSTAMINE:-eager}",
-        "--wallet.mnemonic",
+        "anvil",
+        "--hardfork",
+        "istanbul",
+        "--mnemonic",
         "${GANACHE_MNEMONIC:-taxi music thumb unique chat sand crew more leg another off lamp}",
-        "-e",
-        "1000000",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8545",
+        "--chain-id",
+        "8996",
+        "--block-time",
+        "5",
+        "--gas-limit",
+        "50000000",
+        "--accounts",
+        "10",
       ]
     networks:
       ocean:
@@ -47,12 +38,16 @@ services:
         restart: true
       ocean-contracts:
         condition: service_completed_successfully
+        restart: true
     ports:
       - 10000:5000
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/usr/local/.ocean/:ro
     environment:
       ADDRESS_FILE: /usr/local/.ocean/address.json
+      RUN_AQUARIUS_SERVER: 1
+      RUN_EVENTS_MONITOR: 1
+      EVENTS_HTTP: 1
       EVENTS_RPC: http://ganache:8545
       LOG_LEVEL: ${LOG_LEVEL}
       DB_MODULE: elasticsearch
@@ -63,14 +58,13 @@ services:
       DB_SSL: false
       DB_VERIFY_CERTS: false
       NETWORK_NAME: ${CONTRACTS_NETWORK_NAME}
-      RUN_AQUARIUS_SERVER: 1
-      RUN_EVENTS_MONITOR: 1
       PURGATORY_UPDATE_INTERVAL: 60
+      # BFACTORY_BLOCK: 0 #
       EVENTS_MONITOR_SLEEP_TIME: 30
-      PRIVATE_KEY: 0xc6914ea1e5ac6a1cd2107240be714735bf799ce9ea4125016aeb479266720ff4
+      # PRIVATE_KEY: 0xc6914ea1e5ac6a1cd2107240be714735bf799ce9ea4125016aeb479266720ff4
+      PRIVATE_KEY: ef4b441145c1d0f3b4bc6d61d29f5c6e502359481152f869247c7a4244d45209
       BLOCKS_CHUNK_SIZE: 5000
       PROCESS_RETRY_QUEUE: 1
-      BFACTORY_BLOCK: 0
       SUBGRAPH_URLS: '{"8996": "http://graph-node:8000"}'
     networks:
       ocean:
@@ -85,13 +79,16 @@ services:
     depends_on:
       ocean-contracts:
         condition: service_completed_successfully
+        restart: true
     environment:
-      ADDRESS_FILE: "/usr/local/.ocean/address.json"
+      ADDRESS_FILE: /usr/local/.ocean/address.json
       AQUARIUS_URL: http://aquarius:5000
       NETWORK_URL: '{"8996": "http://ganache:8545"}'
-      IPFS_GATEWAY: ipfs
-      PROVIDER_PRIVATE_KEY: '{"8996": "0xc594c6e5def4bab63ac29eed19a134c130388f74f019bc74b8f4389df2837a58"}'
-      PROVIDER_ADDRESS: 0xe2DD09d719Da89e5a3D0F2549c7E24566e947260
+      IPFS_GATEWAY: ipfs:5005
+      # PROVIDER_PRIVATE_KEY: '{"8996": "0xc594c6e5def4bab63ac29eed19a134c130388f74f019bc74b8f4389df2837a58"}'
+      PROVIDER_PRIVATE_KEY: '{"8996": "ef4b441145c1d0f3b4bc6d61d29f5c6e502359481152f869247c7a4244d45209"}'
+      # PROVIDER_ADDRESS: 0xe2DD09d719Da89e5a3D0F2549c7E24566e947260
+      PROVIDER_ADDRESS: 0xBE5449a6A97aD46c8558A3356267Ee5D2731ab5e
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8030/ || exit 1"]
       interval: 30s
@@ -127,9 +124,8 @@ services:
       retries: 2
       start_period: 30s
 
-  # BEGIN SUBGRAPH
   graph-node:
-    image: graphprotocol/graph-node:v0.28.2
+    image: graphprotocol/graph-node:v0.41.1
     ports:
       - "9000:8000"
       - "8001:8001"
@@ -146,7 +142,7 @@ services:
       postgres_db: graph-node
       ipfs: ipfs:5001
       ethereum: development:http://ganache:8545
-      RUST_LOG: warning
+      RUST_LOG: info
       GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 100
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "8030"]
@@ -166,8 +162,7 @@ services:
     volumes:
       - graphipfs:/data/ipfs
     networks:
-      ocean:
-        ipv4_address: 172.16.0.18
+      - ocean
 
   postgres:
     image: postgres:18
@@ -178,11 +173,11 @@ services:
       POSTGRES_USER: graph-node
       POSTGRES_PASSWORD: let-me-in
       POSTGRES_DB: graph-node
+      POSTGRES_INITDB_ARGS: "--locale=C --lc-collate=C --lc-ctype=C --encoding=UTF8"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
       - ocean
-  # END SUBGRAPH
 
   subgraph:
     build: ocean-subgraph
@@ -190,15 +185,18 @@ services:
       graph-node:
         condition: service_healthy
         restart: true
+      ocean-contracts:
+        condition: service_completed_successfully
+        restart: true
     environment:
       IPFS: http://ipfs:5001
       GRAPH_NODE: http://graph-node:8020
+      ADDRESS_FILE: /ocean-contracts/artifacts/address.json
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:ro
       - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
     networks:
-      ocean:
-        ipv4_address: 172.16.0.21
+      - ocean
 
   ocean-contracts:
     build: contracts
@@ -208,7 +206,8 @@ services:
       DEPLOY_CONTRACTS: ${DEPLOY_CONTRACTS}
       LOCAL_CONTRACTS: ${DEPLOY_CONTRACTS}
       REUSE_DATABASE: ${GANACHE_REUSE_DATABASE:-false}
-      DATABASE_PATH: "/ganache-db"
+      DATABASE_PATH: /ganache-db
+      NETWORK: ${CONTRACTS_NETWORK_NAME}
       NETWORK_NAME: ${CONTRACTS_NETWORK_NAME}
       NETWORK_RPC_HOST: ${NETWORK_RPC_HOST:-ganache}
       NETWORK_RPC_PORT: ${NETWORK_RPC_PORT:-8545}
@@ -218,12 +217,17 @@ services:
       ADDRESS_FILE: /ocean-contracts/artifacts/address.json
     depends_on:
       - ganache
-      - subgraph
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:cached
       - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
     networks:
       - ocean
+    healthcheck:
+      test: ["CMD", "test", "-f", "/ocean-contracts/artifacts/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 30
+      start_period: 1m
 
 volumes:
   graphipfs:
