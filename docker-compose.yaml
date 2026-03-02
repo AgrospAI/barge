@@ -165,7 +165,8 @@ services:
     volumes:
       - graphipfs:/data/ipfs
     networks:
-      - ocean
+      ocean:
+        ipv4_address: 172.16.0.16
 
   postgres:
     image: postgres:18
@@ -183,7 +184,9 @@ services:
       - ocean
 
   subgraph:
-    build: ocean-subgraph
+    build:
+      context: .
+      dockerfile: ocean-subgraph/Dockerfile
     depends_on:
       graph-node:
         condition: service_healthy
@@ -195,6 +198,7 @@ services:
       IPFS: http://ipfs:5001
       GRAPH_NODE: http://graph-node:8020
       ADDRESS_FILE: /ocean-contracts/artifacts/address.json
+      OCEAN_ARTIFACTS_FOLDER: /ocean-contracts/artifacts/
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:ro
       - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
@@ -202,13 +206,14 @@ services:
       - ocean
 
   ocean-contracts:
-    build: contracts
+    build:
+      context: ocean-subgraph/contracts
     environment:
       MNEMONIC: ${MNEMONIC:-taxi music thumb unique chat sand crew more leg another off lamp}
       OWNER_ROLE_ADDRESS: ${CONTRACTS_OWNER_ROLE_ADDRESS}
       DEPLOY_CONTRACTS: ${DEPLOY_CONTRACTS}
       LOCAL_CONTRACTS: ${DEPLOY_CONTRACTS}
-      REUSE_DATABASE: ${GANACHE_REUSE_DATABASE:-false}
+      # REUSE_DATABASE: ${GANACHE_REUSE_DATABASE:-false}
       DATABASE_PATH: /anvil-db
       NETWORK: ${CONTRACTS_NETWORK_NAME}
       NETWORK_NAME: ${CONTRACTS_NETWORK_NAME}
@@ -217,13 +222,14 @@ services:
       NETWORK_RPC_URL: ${NETWORK_RPC_URL:-http://anvil:8545}
       LOCAL_USER_ID: ${LOCAL_USER_ID}
       LOCAL_GROUP_ID: ${LOCAL_GROUP_ID}
-      ADDRESS_FILE: /ocean-contracts/artifacts/address.json
+      ADDRESS_FILE: /ocean-contracts/addresses/address.json
+    # entrypoint: ["sleep", "infinity"]
     depends_on:
       - anvil
     volumes:
-      - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/artifacts/:cached
+      - ${OCEAN_ARTIFACTS_FOLDER}:/ocean-contracts/addresses/:cached
       - ${OCEAN_HOME}/subgraph:/ocean-subgraph/:cached
-      - ccache:/ocean-contracts/ccache:cached
+      - ./.ccache:/ocean-contracts/ccache:cached
     networks:
       - ocean
     healthcheck:
@@ -237,7 +243,6 @@ volumes:
   graphipfs:
   registryvol:
   pgdata:
-  ccache:
   anvil-data:
 
 networks:

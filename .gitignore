@@ -15,3 +15,5 @@ ganache-db/
 
 # Barge logs
 start_ocean.log
+
+.ccache
