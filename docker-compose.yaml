@@ -6,8 +6,7 @@ services:
     volumes:
       - anvil-data:/data
     user: "0" # Needed to write state to volume
-    entrypoint:
-      [
+    entrypoint: [
         "anvil",
         "--hardfork",
         "london",
@@ -23,11 +22,12 @@ services:
         "50000000",
         "--accounts",
         "10",
-        "--preserve-historical-states",
+        # "--preserve-historical-states",
         "--state-interval",
-        "1",
+        "60",
         "--state",
-        "/data/state.json"
+        "/data/state.json",
+        # "--always-generate-state-file",
         # "-q", # quiet mode
       ]
     networks:
