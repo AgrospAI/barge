@@ -3,7 +3,8 @@ def get_metadata_request_from_id() -> str:
     query($id: ID!) {
         metadataRequest(id: $id) {
             id
-            erc721
+            datasetAddress
+            algorithmAddress
             requester
         }
     }

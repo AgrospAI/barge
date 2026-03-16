@@ -72,7 +72,7 @@ class Manager:
 
         # 1. Sign and Send
         signed_tx = self.account.sign_transaction(tx)
-        tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
         logger.info("Transaction sent! Hash: %s", tx_hash.hex())
 
         # 2. Wait for Receipt

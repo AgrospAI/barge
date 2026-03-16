@@ -1,13 +1,13 @@
+import json
 from pathlib import Path
 
-import orjson
 from eth_account.signers.local import LocalAccount
 from eth_typing import ChecksumAddress
 from web3 import AsyncHTTPProvider, AsyncWeb3
 from web3.contract import AsyncContract
 
 
-async def get_web3(rpc_url: str) -> AsyncWeb3[AsyncHTTPProvider]:
+async def get_web3(rpc_url: str) -> AsyncWeb3:
     return AsyncWeb3(AsyncHTTPProvider(rpc_url))
 
 
@@ -20,7 +20,7 @@ def get_contract(
     abi_path: Path,
     contract_address: ChecksumAddress,
 ) -> AsyncContract:
-    artifact = orjson.loads(abi_path.read_bytes())
+    artifact = json.loads(abi_path.read_bytes())
     abi = artifact.get("abi")
 
     if abi is None:

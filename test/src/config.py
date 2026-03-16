@@ -1,6 +1,6 @@
+import json
 from pathlib import Path
 
-import orjson
 from eth_typing import ChecksumAddress
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     )
 
     def contract_address(self, chain: str, contract: str) -> ChecksumAddress:
-        addresses = orjson.loads(self.address_file.read_bytes())
+        addresses = json.loads(self.address_file.read_bytes())
         address = addresses[chain][contract]
         return Web3.to_checksum_address(address)
 

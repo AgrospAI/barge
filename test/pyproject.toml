@@ -3,14 +3,14 @@ name = "subgraph-testing"
 version = "0.1.0"
 description = "Testing local barge subgraph and smart contract deployment"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
-    "orjson>=3.11.7",
+    "ocean-lib>=3.1.2",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
+    "setuptools<81",
     "tenacity>=9.1.4",
-    "web3>=7.14.1",
 ]
 
 [dependency-groups]
