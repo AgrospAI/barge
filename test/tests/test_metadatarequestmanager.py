@@ -84,6 +84,7 @@ async def test_create_and_verify_subgraph(
         algorithm_address,
         [1 & 0xFF],
         ["test"],
+        "I want this!",
     )
 
     assert receipt["status"] == 1, "Blockchain transaction failed"
