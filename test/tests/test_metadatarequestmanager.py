@@ -3,12 +3,11 @@ import logging
 from pathlib import Path
 
 import pytest
-from web3 import Web3
-
 from src.config import Settings
 from src.manager import Manager
 from src.queries import get_metadata_request_from_id
 from src.subgraph import Subgraph
+from web3 import Web3
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ zero_address = "0x0000000000000000000000000000000000000000"
 @pytest.fixture(scope="session")
 async def dataset_algorithm_address(settings: Settings):
     from eth_account import Account
-
     from src.ocean import create_asset
 
     store_path = Path(".addresses.json")
