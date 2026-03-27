@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 from pathlib import Path
@@ -9,7 +8,7 @@ from eth_account import Account
 from eth_typing import ChecksumAddress
 from src.config import Settings
 from src.manager import Manager
-from src.ocean import create_asset
+from src.ocean import create_asset, search_assets
 from src.queries import get_metadata_request_from_id
 from src.subgraph import Subgraph
 from web3 import Web3
@@ -18,13 +17,23 @@ logger = logging.getLogger(__name__)
 
 
 @pytest_asyncio.fixture(scope="function")
-async def metadata_request_manager(settings):
-    return await Manager.create(
-        settings.RPC_URL,
-        settings.PRIVATE_KEY.get_secret_value(),
-        settings.OCEAN_ARTIFACTS_FOLDER,
-        "MetadataRequestManager",
-        settings.contract_address("development", "MetadataRequestManager"),
+async def create_metadata_request_manager(settings):
+    async def create_manager(private_key: str) -> Manager:
+        return await Manager.create(
+            settings.RPC_URL,
+            private_key,
+            settings.OCEAN_ARTIFACTS_FOLDER,
+            "MetadataRequestManager",
+            settings.contract_address("development", "MetadataRequestManager"),
+        )
+
+    return create_manager
+
+
+@pytest_asyncio.fixture(scope="function")
+async def metadata_request_manager(settings: Settings, create_metadata_request_manager):
+    return await create_metadata_request_manager(
+        settings.PRIVATE_KEY.get_secret_value()
     )
 
 
@@ -93,19 +102,21 @@ async def test_voting_weight_oracle_set(metadata_request_manager: Manager):
 
 
 def test_get_asset():
-    from src.ocean import search_assets
-
     assets = search_assets()
 
     print(assets)
 
 
 @pytest.mark.asyncio
-async def test_create_and_verify_subgraph(
+async def test_create_request_and_verify_subgraph(
     settings: Settings,
-    metadata_request_manager,
+    create_metadata_request_manager,
     dataset_algorithm_address,
 ):
+    metadata_request_manager = await create_metadata_request_manager(
+        settings.PRIVATE_KEY_2.get_secret_value()
+    )
+
     dataset_address, algorithm_address = dataset_algorithm_address
 
     # 2. Trigger the Request
@@ -117,7 +128,7 @@ async def test_create_and_verify_subgraph(
             "requestTypes": [1 & 0xFF],
             "data": ["test"],
             "reason": "I want this!",
-            "expiresIn": 86400,  # 1 day in secs
+            "expiresIn": 60,  # in secs
         },
     )
 

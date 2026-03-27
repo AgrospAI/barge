@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     SUBGRAPH_URL: str = Field(...)
     OCEAN_ARTIFACTS_FOLDER: Path = Field(...)
     PRIVATE_KEY: SecretStr = Field(...)
+    PRIVATE_KEY_2: SecretStr = Field(...)
 
     model_config = SettingsConfigDict(
         env_file=".env",
