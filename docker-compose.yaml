@@ -40,6 +40,9 @@ services:
       provider:
         condition: service_healthy
         restart: true
+      graph-node:
+        condition: service_healthy
+        restart: true
       elasticsearch:
         condition: service_healthy
         restart: true
@@ -50,11 +53,11 @@ services:
       - 10000:5000
     volumes:
       - ${OCEAN_ARTIFACTS_FOLDER}:/usr/local/.ocean/:ro
+    entrypoint: ["python3", "events-monitor-main.py"]
     environment:
       ADDRESS_FILE: /usr/local/.ocean/address.json
       RUN_AQUARIUS_SERVER: 1
       RUN_EVENTS_MONITOR: 1
-      EVENTS_HTTP: 1
       EVENTS_RPC: http://anvil:8545
       LOG_LEVEL: ${LOG_LEVEL}
       DB_MODULE: elasticsearch
@@ -69,8 +72,9 @@ services:
       EVENTS_MONITOR_SLEEP_TIME: 30
       PRIVATE_KEY: ef4b441145c1d0f3b4bc6d61d29f5c6e502359481152f869247c7a4244d45209
       BLOCKS_CHUNK_SIZE: 5000
-      PROCESS_RETRY_QUEUE: 1
+      PROCESS_RETRY_QUEUE: 0
       SUBGRAPH_URLS: '{"8996": "http://graph-node:8000"}'
+      PYTHONUNBUFFERED: 1
     networks:
       ocean:
         ipv4_address: 172.16.0.10
